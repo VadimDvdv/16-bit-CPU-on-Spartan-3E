@@ -31,8 +31,10 @@
 // ============================================================
 
 module control_unit (
-    input clk,
-    input initial_rst
+    input        clk,
+    input        initial_rst,
+    input  [2:0] sw,
+    output [7:0] led
 );
 
     // setup PC and IR
@@ -66,10 +68,12 @@ module control_unit (
         .write_en  (reg_write_en),
         .read1_addr(reg_read1_addr),
         .read2_addr(reg_read2_addr),
+        .read3_addr(sw),
         .write_addr(reg_write_addr),
         .write_data(reg_write_data),
         .read1_data(reg_read1_data),
-        .read2_data(reg_read2_data)
+        .read2_data(reg_read2_data),
+        .read3_data(led)
     );
 
     // instantiate ROM module, input is hard-wired to PC
@@ -106,17 +110,16 @@ module control_unit (
     end
 
     // Sequential Logic updating registers and FFs
-    always @ (posedge clk) begin
+    always @(posedge clk) begin
 
         if (initial_rst) begin
             instruction_reg <= 0;
             program_counter <= 0;
             state <= 0;
-        end
-        else begin
+        end else begin
             case (state)
                 // FETCH Phase
-                2'b0: begin 
+                2'b0: begin
                     instruction_reg <= u_rom_read_data;
                     state <= 2'b01; // go to decode phase
                 end
@@ -155,7 +158,7 @@ endmodule
 
 
 module rom (
-    input  [5:0] rom_read_addr,
+    input  [ 5:0] rom_read_addr,
     output [15:0] rom_read_data
 );
 
@@ -165,7 +168,7 @@ module rom (
     initial begin
         $readmemh("prog.hex", memcells);
     end
-    
+
 
     assign rom_read_data = memcells[rom_read_addr];
 

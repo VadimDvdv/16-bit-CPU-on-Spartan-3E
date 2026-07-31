@@ -6,10 +6,12 @@ module regfile (
     input        write_en,
     input  [2:0] read1_addr,  // 1 mem cell to read from
     input  [2:0] read2_addr,  // 2 mem cell to read from
+    input  [2:0] read3_addr,  // 3 mem cell to read from, for LEDs
     input  [2:0] write_addr,  // write address
     input  [7:0] write_data,  // data input for write
     output [7:0] read1_data,  // output from cell 1
     output [7:0] read2_data   // output from cell 2
+    output [7:0] read3_data   // output from mem cell 3, for LEDs
 );
 
     reg [7:0] registers[0:7];  // initialize registers
@@ -27,5 +29,6 @@ module regfile (
 
     assign read1_data = registers[read1_addr];
     assign read2_data = registers[read2_addr];
+    assign read3_data = registers[read3_addr]; // for LEDs
 
 endmodule
