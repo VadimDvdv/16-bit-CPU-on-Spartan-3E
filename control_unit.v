@@ -33,8 +33,8 @@
 module control_unit (
     input        clk,
     input        initial_rst,
-    input  [2:0] sw,
-    output [7:0] led
+    input  [2:0] dbg_addr,
+    output [7:0] dbg_data
 );
 
     // setup PC and IR
@@ -68,12 +68,12 @@ module control_unit (
         .write_en  (reg_write_en),
         .read1_addr(reg_read1_addr),
         .read2_addr(reg_read2_addr),
-        .read3_addr(sw),
+        .read3_addr(dbg_addr),
         .write_addr(reg_write_addr),
         .write_data(reg_write_data),
         .read1_data(reg_read1_data),
         .read2_data(reg_read2_data),
-        .read3_data(led)
+        .read3_data(dbg_data)
     );
 
     // instantiate ROM module, input is hard-wired to PC

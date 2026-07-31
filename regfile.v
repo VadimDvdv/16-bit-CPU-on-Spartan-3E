@@ -10,7 +10,7 @@ module regfile (
     input  [2:0] write_addr,  // write address
     input  [7:0] write_data,  // data input for write
     output [7:0] read1_data,  // output from cell 1
-    output [7:0] read2_data   // output from cell 2
+    output [7:0] read2_data,  // output from cell 2
     output [7:0] read3_data   // output from mem cell 3, for LEDs
 );
 

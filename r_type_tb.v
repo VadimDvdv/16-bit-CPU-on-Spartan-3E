@@ -22,16 +22,16 @@ module r_type_tb;
 
     reg clk;
     reg initial_rst;
-    reg [2:0] sw;
-    wire [7:0] led;
+    reg [2:0] dbg_addr;
+    wire [7:0] dbg_data;
     integer i;
 
     // Device under test — control_unit instantiates alu, regfile, rom
     control_unit uut (
         .clk        (clk),
         .initial_rst(initial_rst),
-        .sw         (sw),
-        .led        (led)
+        .dbg_addr   (dbg_addr),
+        .dbg_data   (dbg_data)
     );
 
     // 10 ns clock
