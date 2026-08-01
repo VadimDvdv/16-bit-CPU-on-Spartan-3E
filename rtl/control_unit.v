@@ -86,8 +86,14 @@ module control_unit (
 
     // Combinational logic selecting modules' inputs
     always @(*) begin
+        // default
+        reg_read1_addr = 3'b0;
+        reg_read2_addr = 3'b0;
+        alu_opcode = 3'b0;
+        reg_write_en = 0;
+        reg_write_addr = 3'b0;
+        reg_write_data = 8'b0;
         case (opcode)
-            // ADD DEFAULTS
             // R-type
             4'b0: begin
                 reg_read1_addr = instruction_reg[8:6];
@@ -162,9 +168,7 @@ module rom (
     output [15:0] rom_read_data
 );
 
-    // IMPORTANT: Finish actual memory contents later!
-
-    reg [15:0] memcells[0:31];
+    reg [15:0] memcells[0:63];
     initial begin
         $readmemh("prog.hex", memcells);
     end
