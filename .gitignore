@@ -1,0 +1,21 @@
+sim/
+*.vcd
+*.out
+*.lxt
+# ISE
+*.xise
+*.gise
+ise/
+_ngo/
+xst/
+iseconfig/
+*.bit
+*.ngc
+*.ngd
+*.bgn
+*.par
+*.pad
+*.twr
+*.map
+*.mrp
+*.drc
