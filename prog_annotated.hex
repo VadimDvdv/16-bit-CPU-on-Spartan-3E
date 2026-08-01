@@ -1,6 +1,10 @@
-0650
-0851
-0A52
-0C53
-0E54
-0047
+// prog.hex — R-type test program (16-bit words, one per ROM cell)
+// Testbench must seed:  R1 = 0x0C (12),  R2 = 0x05 (5)   [after reset deasserts]
+// Encoding: [15:12]=opcode(0=R-type) [11:9]=rd [8:6]=rs1 [5:3]=rs2 [2:0]=func
+//
+0650   // ADD R3, R1, R2  ->  R3 = 12 + 5      = 0x11
+0851   // SUB R4, R1, R2  ->  R4 = 12 - 5      = 0x07
+0A52   // AND R5, R1, R2  ->  R5 = 0x0C & 0x05 = 0x04
+0C53   // OR  R6, R1, R2  ->  R6 = 0x0C | 0x05 = 0x0D
+0E54   // XOR R7, R1, R2  ->  R7 = 0x0C ^ 0x05 = 0x09
+0047   // SHR R0, R1      ->  R0 = 0x0C >> 1   = 0x06
