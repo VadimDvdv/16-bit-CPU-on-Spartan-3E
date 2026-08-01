@@ -15,9 +15,9 @@ module regfile (
 );
 
     reg [7:0] registers[0:7];  // initialize registers
+	 integer i; // for loop counter
 
     always @(posedge clk) begin
-        integer i;  // for loop counter
         if (rst) begin
             for (i = 0; i < 8; i = i + 1) begin
                 registers[i] <= 8'b0;
