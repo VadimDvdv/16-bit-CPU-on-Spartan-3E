@@ -12,8 +12,8 @@
 // (reset clears the regfile, so seeding earlier would be wiped).
 //
 // Build & run:
-//   iverilog -o cpu_test control_unit.v alu.v regfile.v cpu_tb.v
-//   vvp cpu_test
+//   iverilog -g2012 -o r_type_test control_unit.v alu.v regfile.v r_type_tb.v
+//   vvp r_type_test
 //   gtkwave cpu_test.vcd
 // (prog.hex must be in the working directory)
 // ============================================================
@@ -46,7 +46,7 @@ module r_type_tb;
         $dumpvars(0, uut.u_regfile.registers[i]);
 
         // keep all switches off
-        sw = 3'b0;
+        dbg_addr = 3'b0;
 
         initial_rst = 1;
         @(negedge clk);
