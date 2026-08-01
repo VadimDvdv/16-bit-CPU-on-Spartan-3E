@@ -18,7 +18,7 @@ module alu_tb;
     );
 
     initial begin
-        $dumpfile("alu_test.vcd");
+        $dumpfile("sim/alu_test.vcd");
         $dumpvars(0, alu_tb);
 
         $display("Time |   A   |   B   | op | result | flags | expected");

@@ -8,8 +8,8 @@ module top (
     control_unit u_cpu (
         .clk        (clk),
         .initial_rst(initial_rst),
-        .sw         (sw),
-        .led        (led)
+        .dbg_addr   (sw),
+        .dbg_data   (led)
     );
 
 endmodule

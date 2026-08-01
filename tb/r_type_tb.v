@@ -26,7 +26,7 @@ module r_type_tb;
     wire [7:0] dbg_data;
     integer i;
 
-    // Device under test — control_unit instantiates alu, regfile, rom
+    // Device under test - control_unit instantiates alu, regfile, rom
     control_unit uut (
         .clk        (clk),
         .initial_rst(initial_rst),
@@ -38,9 +38,9 @@ module r_type_tb;
     initial clk = 0;
     always #5 clk = ~clk;
 
-    // ---- reset, then seed operands ----
+    // reset, then seed operands
     initial begin
-        $dumpfile("cpu_test.vcd");
+        $dumpfile("sim/r_type_test.vcd");
         $dumpvars(0, r_type_tb);
         for (i = 0; i < 8; i = i + 1)  // dump regfile words for GTKWave
         $dumpvars(0, uut.u_regfile.registers[i]);
@@ -59,7 +59,7 @@ module r_type_tb;
         $display("time  state  PC  IR    aluA aluB aluRes");
     end
 
-    // ---- per-cycle trace (state: 0=FETCH 1=REG-READ 2=EXEC_WB) ----
+    // per-cycle trace (state: 0=FETCH 1=REG-READ 2=EXEC_WB)
     always @(posedge clk)
         if (!initial_rst)
             $display(
@@ -73,7 +73,7 @@ module r_type_tb;
                 uut.alu_result
             );
 
-    // ---- run long enough for 6 instrs x 3 cycles, then verify ----
+    // run long enough for 6 instrs x 3 cycles, then verify
     initial begin
         #250;
         $display("\n---- final register file ----");

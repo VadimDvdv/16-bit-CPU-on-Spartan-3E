@@ -30,7 +30,7 @@ module regfile_tb ();
     end
 
     initial begin
-        $dumpfile("dumps/regfile_test.vcd");
+        $dumpfile("sim/regfile_test.vcd");
         $dumpvars(0, regfile_tb);
 
         // write test
