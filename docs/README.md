@@ -58,3 +58,28 @@ Moving from simulation to silicon required design changes, not just a toolchain 
 - [ ] Assembler
 
 ## Repository layout
+
+```
+rtl/                 synthesizable design
+  top.v              board-level wrapper — pins, clock enable divider
+  control_unit.v     multi-cycle FSM + ROM
+  alu.v              ALU + adder/subtractor
+  regfile.v          8 × 8-bit, 2 read + 1 write + 1 debug read
+tb/                  testbenches (simulation only)
+sim/                 build output — gitignored
+constraints/         top.ucf — pin assignments
+prog_annotated.hex   program source, with encoding comments
+prog.hex             generated, comment-free — gitignored
+run.sh               regenerate prog.hex, compile, simulate
+```
+
+## Building
+
+```bash
+./run.sh r_type      # or alu, regfile, addi
+```
+
+Requires Icarus Verilog. `prog.hex` is regenerated from `prog_annotated.hex`
+on every run — edit the annotated file, never the generated one.
+
+FPGA flow uses Xilinx ISE 14.7 targeting XC3S500E-FG320-4.

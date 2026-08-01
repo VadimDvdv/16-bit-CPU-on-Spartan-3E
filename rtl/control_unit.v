@@ -38,7 +38,7 @@ module control_unit (
 );
 
     // setup PC and IR
-    reg [5:0] program_counter;   // 5-bit PC allows 32 words in ROM
+    reg [5:0] program_counter;   // 6-bit PC allows 64 words in ROM
     reg [15:0] instruction_reg;  // 16-bit IR for 16-bit word length
     wire [3:0] opcode = instruction_reg[15:12];
     reg [1:0] state; // state register
