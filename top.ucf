@@ -1,0 +1,23 @@
+# Data from UG230 Datasheet
+
+# clk
+NET "clk" LOC = "C9" | IOSTANDARD = LVCMOS33 ;
+NET "clk" PERIOD = 20.0ns HIGH 50%;
+
+# initial reset
+NET "initial_rst" LOC = "N17" | IOSTANDARD = LVTTL | PULLUP ;
+
+# switches
+NET "sw<0>" LOC = "L13" | IOSTANDARD = LVTTL | PULLUP ;
+NET "sw<1>" LOC = "L14" | IOSTANDARD = LVTTL | PULLUP ;
+NET "sw<2>" LOC = "H18" | IOSTANDARD = LVTTL | PULLUP ;
+
+# LEDs
+NET "led<7>" LOC = "F9" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "led<6>" LOC = "E9" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "led<5>" LOC = "D11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "led<4>" LOC = "C11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "led<3>" LOC = "F11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "led<2>" LOC = "E11" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "led<1>" LOC = "E12" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
+NET "led<0>" LOC = "F12" | IOSTANDARD = LVTTL | SLEW = SLOW | DRIVE = 8 ;
