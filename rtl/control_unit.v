@@ -141,7 +141,7 @@ module control_unit (
                         end
                         4'b0001: begin
                             alu_a <= reg_read1_data;
-                            alu_b <= {{2{instruction_reg[5]}}, {instruction_reg[5:0]}};  // imm6 padded to 8 bit
+                            alu_b <= {{2{instruction_reg[5]}}, instruction_reg[5:0]};  // imm6 padded to 8 bit
                             state <= 2'b10;
                         end
                     endcase
@@ -170,7 +170,7 @@ module rom (
 
     reg [15:0] memcells[0:63];
     initial begin
-        $readmemh("prog.hex", memcells);
+        $readmemh("prog-addi.hex", memcells);
     end
 
 

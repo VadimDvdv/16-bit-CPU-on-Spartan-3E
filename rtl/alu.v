@@ -64,7 +64,7 @@ module alu (
         flags[0] = ~|result;  // zero flag, NOR all bits
         flags[1] = ~(opcode[1] | opcode[2]) & c_out;  // c_out flag
         flags[2] = result[7];  // sign flag
-        flags[3] = ~(opcode[1] | opcode[2]) & V;
+        flags[3] = ~(opcode[1] | opcode[2]) & V;  // overflow flag
     end
 
 endmodule
