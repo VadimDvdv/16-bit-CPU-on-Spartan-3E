@@ -7,7 +7,9 @@ module top #(
     output wire [7:0] led
 );
 
-    control_unit u_cpu (
+    control_unit #(
+        .PROG_FILE(PROG_FILE)
+    ) u_cpu (
         .clk        (clk),
         .initial_rst(initial_rst),
         .dbg_addr   (sw),

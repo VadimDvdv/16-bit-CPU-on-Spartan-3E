@@ -7,5 +7,5 @@ if [ -f "programs/${BENCH}.hex" ]; then
 else
     printf 'FFFF\n%.0s' {1..64} > sim/prog.hex   # alu_tb, regfile_tb: CPU unused
 fi
-iverilog -o sim/${BENCH}_test rtl/*.v tb/${BENCH}_tb.v
+iverilog -s ${BENCH}_tb -o sim/${BENCH}_test rtl/*.v tb/${BENCH}_tb.v
 vvp sim/${BENCH}_test

@@ -81,7 +81,7 @@ module control_unit #(
     // instantiate ROM module, input is hard-wired to PC
     wire [15:0] u_rom_read_data;
 
-    rom u_rom (
+    rom #(.PROG_FILE(PROG_FILE)) u_rom (
         .rom_read_addr(program_counter),
         .rom_read_data(u_rom_read_data)
     );

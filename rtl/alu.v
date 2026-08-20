@@ -68,5 +68,3 @@ module alu (
     end
 
 endmodule
-
-// --indentation_spaces=4 --wrap_spaces=4 --column_limit=100 --port_declarations_alignment=align --port_declarations_indentation=indent --named_port_alignment=align --named_parameter_alignment=align --formal_parameters_alignment=align --formal_parameters_indentation=indent --module_net_variable_alignment=preserve --assignment_statement_alignment=preserve --case_items_alignment=align --class_member_variable_alignment=align --distribution_items_alignment=align --enum_assignment_statement_alignment=align --struct_union_members_alignment=align --try_wrap_long_lines=true

@@ -27,7 +27,7 @@ module r_type_tb;
     integer i;
 
     // Device under test - control_unit instantiates alu, regfile, rom
-    control_unit uut (
+    control_unit #(.PROG_FILE("sim/prog.hex")) uut (
         .clk        (clk),
         .initial_rst(initial_rst),
         .dbg_addr   (dbg_addr),
