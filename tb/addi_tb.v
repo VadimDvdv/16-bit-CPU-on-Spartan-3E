@@ -60,7 +60,7 @@ module addi_tb;
     integer tests = 0;  // checks how many tests actually ran, so timeout doesn't say success
 
     task check;
-        input [8*16:1] label;  // find out what it means
+        input [8*16:1] label;
         input [7:0] actual;
         input [7:0] expected;
         begin
@@ -84,7 +84,7 @@ module addi_tb;
             if (errors === 0 && tests == EXPECTED_CHECKS) begin
                 $display("TESTS PASSED SUCCESSFULLY, 0 ERRORS");
             end else begin
-                $display("TESTS FAILED, %0d ERRORS, %0d of %od checks ran", errors, tests,
+                $display("TESTS FAILED, %0d ERRORS, %0d of %0d checks ran", errors, tests,
                          EXPECTED_CHECKS);
             end
         end
@@ -133,7 +133,7 @@ module addi_tb;
         check("R3 = 127+1", uut.u_regfile.registers[3], golden_addi(8'sd127, 6'sd1));
 
         // bystanders — never written, must stay 0
-        for (a = 4; a < 8; a = a + 1) check("bystander", uut.u_regfile.registers[a], 8'h00);
+        for (a = 4; a < 8; a = a + 1) check("bystander[%0d]", a, uut.u_regfile.registers[a], 8'h00);
 
         summary();
         $finish;
