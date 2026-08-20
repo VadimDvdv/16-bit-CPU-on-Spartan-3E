@@ -1,13 +1,28 @@
-// ADDI test program
-100F   // ADDI R0, R0, #15    R0 = 0 + 15    = 15   (0x0F)  seeding bootstrap
-1221   // ADDI R1, R0, #-31   R1 = 15 - 31   = -16  (0xF0)  negative result
-0441   // SUB  R2, R1, R0     R2 = -16 - 15  = -31  (0xE1)  R-type consumes ADDI output
-161F   // ADDI R3, R0, #31    R3 = 15 + 31   = 46   (0x2E)
-16DF   // ADDI R3, R3, #31    R3 = 46 + 31   = 77   (0x4D)  rd == rs1
-16DF   // ADDI R3, R3, #31    R3 = 77 + 31   = 108  (0x6C)  rd == rs1
-16D3   // ADDI R3, R3, #19    R3 = 108 + 19  = 127  (0x7F)  signed max
-16C1   // ADDI R3, R3, #1     R3 = 127 + 1   = -128 (0x80)  wrap boundary
-FFFF   // undefined opcode -> halt
+// addi.hex - directed test for ADDI: sign extension, forwarding into R-type,
+// rd == rs1, and the signed wrap boundary.
+//
+// Self-seeding: the register file resets to zero, so the first instruction builds
+// a nonzero value out of R0 without needing a load instruction or a testbench
+// force. This program runs on the board unmodified.
+//
+// Encoding and opcode tables: see docs/README.md
+//
+// Expected register file at halt:
+//   R0 = 0x0F   R1 = 0xF0   R2 = 0xE1   R3 = 0x80   R4-R7 = 0x00
+//
+// Halts at PC = 8 on the first pad word.
+//
+100F   // ADDI R0, R0, #15    R0 = 0  + 15  =   15  (0x0F)  bootstrap out of reset
+1221   // ADDI R1, R0, #-31   R1 = 15 - 31  =  -16  (0xF0)  imm6 sign extension
+0441   // SUB  R2, R1, R0     R2 = -16 - 15 =  -31  (0xE1)  R-type reads an ADDI result
+161F   // ADDI R3, R0, #31    R3 = 15 + 31  =   46  (0x2E)  imm6 max positive
+16DF   // ADDI R3, R3, #31    R3 = 46 + 31  =   77  (0x4D)  rd == rs1
+16DF   // ADDI R3, R3, #31    R3 = 77 + 31  =  108  (0x6C)  rd == rs1, back to back
+16D3   // ADDI R3, R3, #19    R3 = 108 + 19 =  127  (0x7F)  signed max
+16C1   // ADDI R3, R3, #1     R3 = 127 + 1  = -128  (0x80)  wraps; ALU raises overflow
+       //                                                   and sign, but the FSM does
+       //                                                   not consume flags yet
+FFFF   // unassigned opcode -> FSM stops in REG-READ. Pad, do not remove.
 FFFF
 FFFF
 FFFF

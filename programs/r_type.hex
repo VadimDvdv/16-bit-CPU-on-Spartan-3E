@@ -1,14 +1,28 @@
-// prog.hex — R-type test program (16-bit words, one per ROM cell)
-// Testbench must seed:  R1 = 0x0C (12),  R2 = 0x05 (5)   [after reset deasserts]
-// Encoding: [15:12]=opcode(0=R-type) [11:9]=rd [8:6]=rs1 [5:3]=rs2 [2:0]=func
+// r_type.hex - exercises all 8 ALU ops through the datapath.
+//
+// SIMULATION ONLY. There is no load instruction yet, so R1 and R2 must be seeded
+// by the testbench after reset deasserts (reset clears the register file, so
+// seeding earlier is wiped). To make this program run on the board, prepend
+//   120C   // ADDI R1, R0, #12
+//   1405   // ADDI R2, R0, #5
+// and delete the hierarchical seed in r_type_tb.
+//
+// Seeded:  R1 = 0x0C (12)   R2 = 0x05 (5)
+// Encoding and opcode tables: see docs/README.md
+//
+// Expected register file at halt:
+//   R0 = 0x06   R1 = 0x0C   R2 = 0x05   R3 = 0x11
+//   R4 = 0x07   R5 = 0x04   R6 = 0x0D   R7 = 0x09
+//
+// Halts at PC = 6 on the first pad word.
 //
 0650   // ADD R3, R1, R2  ->  R3 = 12 + 5      = 0x11
 0851   // SUB R4, R1, R2  ->  R4 = 12 - 5      = 0x07
 0A52   // AND R5, R1, R2  ->  R5 = 0x0C & 0x05 = 0x04
 0C53   // OR  R6, R1, R2  ->  R6 = 0x0C | 0x05 = 0x0D
 0E54   // XOR R7, R1, R2  ->  R7 = 0x0C ^ 0x05 = 0x09
-0047   // SHR R0, R1      ->  R0 = 0x0C >> 1   = 0x06
-FFFF
+0047   // SHR R0, R1      ->  R0 = 0x0C >> 1   = 0x06   (rs2 ignored)
+FFFF   // unassigned opcode -> FSM stops in REG-READ. Pad, do not remove.
 FFFF
 FFFF
 FFFF
