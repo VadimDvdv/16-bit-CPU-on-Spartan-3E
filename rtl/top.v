@@ -1,4 +1,6 @@
-module top (
+module top #(
+    parameter PROG_FILE = "prog.hex"
+) (
     input  wire       clk,
     input  wire       initial_rst,
     input  wire [2:0] sw,

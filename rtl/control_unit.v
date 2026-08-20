@@ -30,7 +30,9 @@
 // Harvard: instruction ROM addressed by PC; data memory separate (todo).
 // ============================================================
 
-module control_unit (
+module control_unit #(
+    parameter PROG_FILE = "prog.hex"
+) (
     input        clk,
     input        initial_rst,
     input  [2:0] dbg_addr,
