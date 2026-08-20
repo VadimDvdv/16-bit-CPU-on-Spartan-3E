@@ -3,11 +3,13 @@
 module addi_tb;
 
     // initialize uut
-    reg clk;
-    reg initial_rst;
-    reg [3:0] dbg_addr;
+    reg        clk;
+    reg        initial_rst;
+    reg  [2:0] dbg_addr;
     wire [7:0] dbg_data;
-    control_unit uut (
+    control_unit #(
+        .PROG_FILE("sim/prog.hex")
+    ) uut (
         .clk        (clk),
         .initial_rst(initial_rst),
         .dbg_addr   (dbg_addr),
@@ -18,7 +20,6 @@ module addi_tb;
     initial clk = 0;
     always #5 clk = ~clk;
 
-    integer errors = 0;  // error counter
     integer i;  // for loop counter
 
     // golden model function
@@ -54,11 +55,16 @@ module addi_tb;
         end
     endtask
 
+    localparam EXPECTED_CHECKS = 12;
+    integer errors = 0;  // errors counter
+    integer tests = 0;  // checks how many tests actually ran, so timeout doesn't say success
+
     task check;
         input [8*16:1] label;  // find out what it means
         input [7:0] actual;
         input [7:0] expected;
         begin
+            tests = tests + 1;
             if (actual === expected) begin
                 $display("  PASS  %0s = 0x%02h", label, actual);
             end else begin
@@ -75,10 +81,11 @@ module addi_tb;
             $display(
                 "REG[%1d]: %8b (%02h)", i, uut.u_regfile.registers[i], uut.u_regfile.registers[i]
             );
-            if (errors === 0) begin
+            if (errors === 0 && tests == EXPECTED_CHECKS) begin
                 $display("TESTS PASSED SUCCESSFULLY, 0 ERRORS");
             end else begin
-                $display("TESTS FAILED, %0d ERRORS", errors);
+                $display("TESTS FAILED, %0d ERRORS, %0d of %od checks ran", errors, tests,
+                         EXPECTED_CHECKS);
             end
         end
     endtask
