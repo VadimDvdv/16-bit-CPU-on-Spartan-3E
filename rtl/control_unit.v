@@ -170,7 +170,7 @@ module rom (
 
     reg [15:0] memcells[0:63];
     initial begin
-        $readmemh("prog-addi.hex", memcells);
+        $readmemh("prog.hex", memcells);
     end
 
 

@@ -6,7 +6,7 @@
 16DF   // ADDI R3, R3, #31    R3 = 46 + 31   = 77   (0x4D)  rd == rs1
 16DF   // ADDI R3, R3, #31    R3 = 77 + 31   = 108  (0x6C)  rd == rs1
 16D3   // ADDI R3, R3, #19    R3 = 108 + 19  = 127  (0x7F)  signed max
-16D1   // ADDI R3, R3, #1     R3 = 127 + 1   = -128 (0x80)  wrap boundary
+16C1   // ADDI R3, R3, #1     R3 = 127 + 1   = -128 (0x80)  wrap boundary
 FFFF   // undefined opcode -> halt
 FFFF
 FFFF
