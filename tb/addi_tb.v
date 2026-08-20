@@ -47,7 +47,7 @@ module addi_tb;
         end
     endtask
 
-    // for knowing we're at the right point to run check task, negedge after exec state
+    // for knowing we're at the right point to run check_reg task, negedge after exec state
     task apply_instr;
         begin
             while (uut.state !== 2'b10) @(negedge clk);
@@ -59,12 +59,16 @@ module addi_tb;
     integer errors = 0;  // errors counter
     integer tests = 0;  // checks how many tests actually ran, so timeout doesn't say success
 
-    task check;
+    task check_reg;
         input [8*16:1] label;
-        input [7:0] actual;
+        input [2:0] r;
         input [7:0] expected;
+        reg [7:0] actual;
         begin
-            tests = tests + 1;
+            dbg_addr = r;
+            #1;  // let read3_data settle
+            actual = dbg_data;
+            tests  = tests + 1;
             if (actual === expected) begin
                 $display("  PASS  %0s = 0x%02h", label, actual);
             end else begin
@@ -98,48 +102,49 @@ module addi_tb;
         $finish;
     end
 
-    integer a;  // for bystander loop counter, avoiding overlaps with i
+    integer          a;  // for bystander loop counter, avoiding overlaps with i
+    reg     [8*16:1] lbl;  // label for bystander registers
     initial begin
         $dumpfile("sim/addi_test.vcd");
         $dumpvars(0, addi_tb);
         for (i = 0; i < 8; i = i + 1) $dumpvars(0, uut.u_regfile.registers[i]);
 
         // starting by resetting & keeping switches off
-        dbg_addr = 4'b0;
+        dbg_addr = 3'b0;
         apply_reset();
 
         apply_instr();  // 100F
-        check("R0 = 0+15", uut.u_regfile.registers[0], golden_addi(8'sd0, 6'sd15));
+        check_reg("R0 = 0+15", 3'd0, golden_addi(8'sd0, 6'sd15));
 
         apply_instr();  // 1221
-        check("R1 = 15-31", uut.u_regfile.registers[1], golden_addi(8'sd15, -6'sd31));
+        check_reg("R1 = 15-31", 3'd1, golden_addi(8'sd15, -6'sd31));
 
         apply_instr();  // 0441
-        check("R2 = -16-15", uut.u_regfile.registers[2], golden_sub(-8'sd16, 8'sd15));
+        check_reg("R2 = -16-15", 3'd2, golden_sub(-8'sd16, 8'sd15));
 
         apply_instr();  // 161F
-        check("R3 = 15+31", uut.u_regfile.registers[3], golden_addi(8'sd15, 6'sd31));
+        check_reg("R3 = 15+31", 3'd3, golden_addi(8'sd15, 6'sd31));
 
         apply_instr();  // 16DF
-        check("R3 = 46+31", uut.u_regfile.registers[3], golden_addi(8'sd46, 6'sd31));
+        check_reg("R3 = 46+31", 3'd3, golden_addi(8'sd46, 6'sd31));
 
         apply_instr();  // 16DF
-        check("R3 = 77+31", uut.u_regfile.registers[3], golden_addi(8'sd77, 6'sd31));
+        check_reg("R3 = 77+31", 3'd3, golden_addi(8'sd77, 6'sd31));
 
         apply_instr();  // 16D3
-        check("R3 = 108+19", uut.u_regfile.registers[3], golden_addi(8'sd108, 6'sd19));
+        check_reg("R3 = 108+19", 3'd3, golden_addi(8'sd108, 6'sd19));
 
         apply_instr();  // 16D1
-        check("R3 = 127+1", uut.u_regfile.registers[3], golden_addi(8'sd127, 6'sd1));
+        check_reg("R3 = 127+1", 3'd3, golden_addi(8'sd127, 6'sd1));
 
         // bystanders — never written, must stay 0
-        for (a = 4; a < 8; a = a + 1) check("bystander[%0d]", a, uut.u_regfile.registers[a], 8'h00);
+        for (a = 4; a < 8; a = a + 1) begin
+            $sformat(lbl, "bystander R%0d", a);
+            check_reg(lbl, a[2:0], 8'h00);
+        end
 
         summary();
         $finish;
-
-
-
     end
 
 endmodule
