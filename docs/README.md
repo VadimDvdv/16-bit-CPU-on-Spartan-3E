@@ -17,18 +17,26 @@ Multi-cycle, Harvard. Five modules:
 | `regfile.v` | 8 x 8-bit, 2 read ports + 1 write port + 1 debug read port |
 | `rom.v` | Instruction memory, addressed directly by PC, initialized from a hex file |
 
+![Datapath and control unit](datapath.svg)
+
+The register file feeds `alu_a` and `alu_b` in DECODE; the ALU evaluates and the
+result returns to the write port in EXECUTE. `ALUSrc` selects the B operand between
+`read2_data` and the sign-extended immediate. The debug read port is a third
+asynchronous read on the register file, driven by `sw[2:0]` and observed on
+`led[7:0]` — the same path the ADDI testbench checks through. `flags[3:0]` is wired
+out of the ALU but nothing consumes it yet, so XST trims the flag logic.
+
 ### FSM
 
-Three cycles per instruction (CPI = 3):
+Three cycles per instruction (CPI = 3).
 
-```
-FETCH  ->  REG-READ  ->  EXEC+WB
-latch IR   latch A, B    ALU computes, write rd, PC++
-```
+![Control FSM](fsm.svg)
 
 Two-process style: one clocked block for state and datapath registers, one
 combinational block for control decode. R-type latches two register operands.
 ADDI latches rs1 and a sign-extended imm6, then shares the same execute path.
+`reg_write_en` is combinational and asserted by the decoder when `state == 2'b10`,
+so it is a function of state rather than a stored control bit.
 
 `ALUOut` and the ALU input muxes are deferred until branches, where one ALU has to
 serve both a comparison and a target computation.
@@ -277,6 +285,8 @@ programs/            program sources with encoding comments
   addi.hex
 sim/                 build output and generated prog.hex, gitignored
 docs/README.md       this file
+docs/datapath.svg    datapath and control unit
+docs/fsm.svg         control FSM states and transitions
 top.ucf              pin constraints
 run.sh               regenerate the program, compile, simulate, verdict
 .verible.fmt         formatter config

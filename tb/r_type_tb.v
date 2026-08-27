@@ -1,33 +1,18 @@
 `timescale 1ns / 1ps
 
-// ============================================================
-// Testbench for the R-type CPU (control_unit + alu + regfile + rom)
-//
-// Program under test lives in prog.hex:
-//   ADD R3,R1,R2 / SUB R4,R1,R2 / AND R5,R1,R2 /
-//   OR  R6,R1,R2 / XOR R7,R1,R2 / SHR R0,R1
-//
-// The regfile has no load instruction yet, so operands R1/R2 are
-// seeded directly via a hierarchical force AFTER reset deasserts
-// (reset clears the regfile, so seeding earlier would be wiped).
-//
-// Build & run:
-//   iverilog -g2012 -o r_type_test control_unit.v alu.v regfile.v r_type_tb.v
-//   vvp r_type_test
-//   gtkwave cpu_test.vcd
-// (prog.hex must be in the working directory)
-// ============================================================
 
 module r_type_tb;
 
-    reg clk;
-    reg initial_rst;
-    reg [2:0] dbg_addr;
-    wire [7:0] dbg_data;
-    integer i;
+    reg           clk;
+    reg           initial_rst;
+    reg     [2:0] dbg_addr;
+    wire    [7:0] dbg_data;
+    integer       i;
 
     // Device under test - control_unit instantiates alu, regfile, rom
-    control_unit #(.PROG_FILE("sim/prog.hex")) uut (
+    control_unit #(
+        .PROG_FILE("sim/prog.hex")
+    ) uut (
         .clk        (clk),
         .initial_rst(initial_rst),
         .dbg_addr   (dbg_addr),
@@ -46,15 +31,15 @@ module r_type_tb;
         $dumpvars(0, uut.u_regfile.registers[i]);
 
         // keep all switches off
-        dbg_addr = 3'b0;
+        dbg_addr    = 3'b0;
 
         initial_rst = 1;
         @(negedge clk);
         @(negedge clk);  // two posedges elapse with reset high
-        initial_rst = 0;
+        initial_rst                = 0;
 
-        uut.u_regfile.registers[1] = 8'h0C;    // R1 = 12
-        uut.u_regfile.registers[2] = 8'h05;    // R2 = 5
+        uut.u_regfile.registers[1] = 8'h0C;  // R1 = 12
+        uut.u_regfile.registers[2] = 8'h05;  // R2 = 5
         $display("t=%0t  reset released; seeded R1=0x0C, R2=0x05", $time);
         $display("time  state  PC  IR    aluA aluB aluRes");
     end

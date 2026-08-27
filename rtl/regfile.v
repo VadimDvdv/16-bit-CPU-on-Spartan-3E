@@ -14,8 +14,8 @@ module regfile (
     output [7:0] read3_data   // output from mem cell 3, for LEDs
 );
 
-    reg [7:0] registers[0:7];  // initialize registers
-	 integer i; // for loop counter
+    reg     [7:0] registers              [0:7];  // initialize registers
+    integer       i;  // for loop counter
 
     always @(posedge clk) begin
         if (rst) begin
@@ -29,6 +29,6 @@ module regfile (
 
     assign read1_data = registers[read1_addr];
     assign read2_data = registers[read2_addr];
-    assign read3_data = registers[read3_addr]; // for LEDs
+    assign read3_data = registers[read3_addr];  // for LEDs
 
 endmodule

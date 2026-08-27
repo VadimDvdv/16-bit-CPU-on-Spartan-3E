@@ -1,3 +1,5 @@
+`timescale 1ns / 1ps
+
 module rom #(
     parameter PROG_FILE = "prog.hex"
 ) (
