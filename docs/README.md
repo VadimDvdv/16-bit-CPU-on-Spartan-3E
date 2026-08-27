@@ -124,9 +124,26 @@ Three things had to change going from simulation to synthesis.
 register file routes up through the control unit to physical pins. Slide switches select
 the register; the value shows on the 8 LEDs.
 
-**Trimming.** The original top-level had no output ports, so synthesis would have deleted
-the whole design as unobservable. The debug output anchors the full logic cone:
+**Trimming.** Two separate causes, both of which produced an empty design that
+simulated correctly.
+
+The first: the original top-level had no output ports, so synthesis deleted the whole
+design as unobservable. The debug output anchors the full logic cone:
 LEDs <- regfile <- ALU <- IR <- ROM <- PC <- FSM.
+
+The second: a `$readmemh` file shorter than the 64-word ROM left the remaining cells
+at `X`. XST will not infer a block RAM from a partially initialized array, and rather
+than warn, it discarded the memory and then trimmed everything downstream of it.
+Simulation was unaffected, because Icarus is content to propagate `X`. Every program
+now pads to a full 64 words, and `run.sh` generates a 64-word `FFFF` file even for the
+benches that do not instantiate the CPU.
+
+**Latch inference.** The combinational decode block assigned control signals only
+inside the arms of a `case`, so any signal not written on a given path had to hold its
+previous value, and XST inferred a latch to do it. This appeared as a synthesis
+warning and as nothing at all in simulation, where the same code reads as ordinary
+sequencing. Fixed by assigning every control signal a default immediately before the
+`case`, so each arm overrides rather than partially specifies.
 
 **Language strictness.** Icarus in SystemVerilog mode accepted things XST rejects:
 variable declarations in unnamed blocks, and comments inside `$readmemh` data files.
@@ -182,15 +199,44 @@ Pin assignments are in `top.ucf`, taken from UG230: `clk` on the 50 MHz oscillat
 
 | Bench | Level |
 |---|---|
-| `r_type_tb` | Self-checking. Runs all 8 ALU ops and compares the full register file against expected values |
-| `alu_tb` | Directed stimulus with logged output, 12 vectors, no automatic comparison |
-| `regfile_tb` | Directed stimulus with logged output, no automatic comparison |
-| `addi_tb` | In progress. Golden model derived from the ISA spec rather than from the RTL |
+| `addi_tb` | Self-checking against a golden model, port-level, 12 checks, aggregate verdict |
+| `r_type_tb` | Per-check PASS/FAIL on 8 registers, but no aggregate verdict and no error counter |
+| `alu_tb` | Directed stimulus with logged output, 12 of 524,288 input combinations, no comparison |
+| `regfile_tb` | Directed stimulus with logged output, no comparison |
 
-`r_type_tb` still seeds R1 and R2 through a hierarchical reference and reads results
-through the register file array rather than through the debug port. Both should move
-to the port level, so that a passing simulation is evidence about the same read path
-the board uses.
+`run.sh` treats a bench as passing only if it prints `TESTS PASSED`. `alu`, `regfile`,
+and `r_type` print no such line, so the regression reports `NO VERDICT` for them and
+fails. That is the intended reading: a bench a human has to eyeball is not a bench.
+
+### `addi_tb`
+
+The one bench that is finished. Three properties, in order of how much they matter:
+
+**Independent golden model.** `golden_addi(rs1, imm6)` returns `rs1 + imm6` from the
+ISA definition, not from the RTL expression. A model copied out of the design under
+test fails in the same direction as the design and proves nothing.
+
+**Port-level checking.** `check_reg` drives `dbg_addr` and samples `dbg_data` — the
+same third read port the board reads through. A passing simulation is therefore
+evidence about the path the hardware actually uses, not about an internal array that
+does not exist after synthesis. The DUT owns `posedge`, the bench owns `negedge`, so
+sampling never races the non-blocking update.
+
+**Verdict that can fail.** `EXPECTED_CHECKS = 12` and the summary requires
+`errors === 0 && tests == EXPECTED_CHECKS`. Counting errors alone is not enough: a
+timeout or an empty ROM runs zero checks and would otherwise print success.
+
+Retirement is detected by waiting on `uut.state !== 2'b10` rather than `repeat(3)`,
+so the bench survives a change in CPI. The 12 checks cover the self-seeding bootstrap,
+a negative immediate, a cross-format dependency (ADDI feeding SUB), `rd == rs1`
+back-to-back, the `0x7F + 1` signed wrap, and four bystander registers that must stay
+zero. Validated by mutation: replacing sign-extension with zero-extension in the
+immediate path is caught, and only by the negative-immediate cases — the two agree
+whenever `imm6[5] == 0`.
+
+`r_type_tb` is the older, weaker bench: it seeds R1 and R2 through a hierarchical
+force, checks through `uut.u_regfile.registers[]`, and waits a fixed `#250` instead of
+tracking state. Moving it to the `addi_tb` pattern is on the list below.
 
 ## Status
 
@@ -201,9 +247,11 @@ the board uses.
 - [x] Pin constraints (`top.ucf`)
 - [x] Bitstream and board programming
 - [x] Running on hardware, verified by register readback on the LEDs
-- [x] Self-checking testbench for the R-type program
-- [ ] Self-checking testbench for ADDI
+- [x] Self-checking testbench for ADDI: golden model, port-level, aggregate verdict
+- [x] Regression driver (`run.sh all`) that fails a bench printing no verdict
 - [ ] Port-level checking in `r_type_tb`; drop the hierarchical seed and peek
+- [ ] Aggregate verdict in `alu_tb` and `regfile_tb` so the regression stops reporting
+      `NO VERDICT`
 - [ ] Explicit HALT state instead of relying on an unassigned `state` in REG-READ
 - [ ] Clock enable divider and single-step mode (debounced button drives the enable)
 - [ ] LDI, LD, ST, BEQ, BNE, BLT, JAL
@@ -220,24 +268,35 @@ rtl/                 synthesizable design
   alu.v
   regfile.v
 tb/                  testbenches, simulation only
+  addi_tb.v          self-checking, golden model, port-level
+  r_type_tb.v        per-check output, no verdict
+  alu_tb.v
+  regfile_tb.v
 programs/            program sources with encoding comments
   r_type.hex
   addi.hex
 sim/                 build output and generated prog.hex, gitignored
+docs/README.md       this file
 top.ucf              pin constraints
-run.sh               regenerate the program, compile, simulate
+run.sh               regenerate the program, compile, simulate, verdict
+.verible.fmt         formatter config
 ```
 
 ## Building
 
 ```bash
-./run.sh r_type      # or alu, regfile, addi
+./run.sh addi        # or alu, regfile, r_type
+./run.sh all         # every bench; non-zero exit if any fails
 ```
 
 Needs Icarus Verilog. The bench name selects the program: `run.sh addi` uses
 `programs/addi.hex`. Benches that do not instantiate the CPU get a ROM filled with
-`FFFF` rather than an empty file, because a partially initialized memory is what made
-XST discard the ROM and trim the whole design once already.
+`FFFF` rather than an empty file, for the trimming reason above.
+
+A bench passes only if it prints `TESTS PASSED`. Three outcomes are distinguished:
+`FAILED` (the bench printed a failure or the simulator exited non-zero), `NO VERDICT`
+(the bench ran but decides nothing), and `PASSED`. `NO VERDICT` is a failure. Today
+only `addi` passes; the other three are stimulus benches awaiting a verdict.
 
 FPGA flow: ISE 14.7, XC3S500E-FG320-4. The repo and the ISE project directory are
 separate copies; only the RTL, `top.ucf`, and a generated `prog.hex` are needed on the
