@@ -2,13 +2,16 @@
 
 module alu_tb;
 
-    // Define I/O
-    reg [7:0] A, B;  // reg because we set up this value
-    reg  [2:0] opcode;
-    wire [7:0] result;  // wire because it's driven by the instantiated module
-    wire [3:0] flags;
+    localparam EXPECTED_CHECKS = 12;
 
-    // instantiate alu
+    reg [7:0] A, B;
+    reg     [2:0] opcode;
+    wire    [7:0] result;
+    wire    [3:0] flags;
+
+    integer       errors = 0;
+    integer       tests = 0;
+
     alu uut (
         .A     (A),
         .B     (B),
@@ -17,113 +20,62 @@ module alu_tb;
         .flags (flags)
     );
 
+    // Drive one vector and compare result and flags.
+    // flags = {overflow, sign, carry, zero}
+    task check;
+        input [8*20-1:0] name;
+        input [7:0] a_in;
+        input [7:0] b_in;
+        input [2:0] op_in;
+        input [7:0] exp_result;
+        input [3:0] exp_flags;
+        begin
+            A      = a_in;
+            B      = b_in;
+            opcode = op_in;
+            #10;
+            tests = tests + 1;
+            if (result === exp_result && flags === exp_flags)
+                $display("  PASS  %0s  result=%b flags=%b", name, result, flags);
+            else begin
+                errors = errors + 1;
+                $display("  FAIL  %0s", name);
+                $display("        result=%b expected=%b", result, exp_result);
+                $display("        flags =%b expected=%b", flags, exp_flags);
+            end
+        end
+    endtask
+
     initial begin
         $dumpfile("sim/alu_test.vcd");
         $dumpvars(0, alu_tb);
 
-        $display("Time |   A   |   B   | op | result | flags | expected");
-        $display("-----------------------------------------------------");
+        $display("---- alu checks ----");
 
-        // operation tests
-        // add
-        A      = 8'b00001111;
-        B      = 8'b11110000;
-        opcode = 3'b000;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=11111111");
+        // operations
+        check("ADD", 8'h0f, 8'hf0, 3'b000, 8'hff, 4'b0100);
+        check("SUB", 8'h0f, 8'hf0, 3'b001, 8'h1f, 4'b0000);
+        check("AND", 8'h8f, 8'hf0, 3'b010, 8'h80, 4'b0100);
+        check("OR", 8'h0f, 8'h70, 3'b011, 8'h7f, 4'b0000);
+        check("XOR", 8'h55, 8'hab, 3'b100, 8'hfe, 4'b0100);
+        check("NOT", 8'h01, 8'h00, 3'b101, 8'hfe, 4'b0100);
+        check("SHL", 8'hff, 8'h00, 3'b110, 8'hfe, 4'b0100);
+        check("SHR", 8'hff, 8'h00, 3'b111, 8'h7f, 4'b0000);
 
-        // sub
-        A      = 8'b00001111;
-        B      = 8'b11110000;
-        opcode = 3'b001;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=00011111");
+        // flag corners
+        check("zero flag", 8'hff, 8'hff, 3'b100, 8'h00, 4'b0001);
+        check("carry out", 8'hff, 8'hff, 3'b000, 8'hfe, 4'b0110);
+        check("sign flag", 8'h0f, 8'h10, 3'b001, 8'hff, 4'b0100);
+        check("overflow", 8'h7f, 8'h01, 3'b000, 8'h80, 4'b1100);
 
-        // and
-        A      = 8'b10001111;
-        B      = 8'b11110000;
-        opcode = 3'b010;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=10000000");
-
-        // or
-        A      = 8'b00001111;
-        B      = 8'b01110000;
-        opcode = 3'b011;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=01111111");
-
-        // xor
-        A      = 8'b01010101;
-        B      = 8'b10101011;
-        opcode = 3'b100;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=11111110");
-
-        // not A
-        A      = 8'b00000001;
-        B      = 8'b00000000;
-        opcode = 3'b101;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=11111110");
-
-        // shift left
-        A      = 8'b11111111;
-        B      = 8'b00000000;
-        opcode = 3'b110;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=11111110");
-
-        // shift right
-        A      = 8'b11111111;
-        B      = 8'b00000000;
-        opcode = 3'b111;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=01111111");
-
-        // flag tests
-        // zero flag (should be 1)
-        A      = 8'b11111111;
-        B      = 8'b11111111;
-        opcode = 3'b100;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=00000000, zero=1");
-
-        // carry-out flag (should be 1)
-        A      = 8'b11111111;
-        B      = 8'b11111111;
-        opcode = 3'b000;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=11111110, carry=1");
-
-        // sign flag (should be 1)
-        A      = 8'b00001111;
-        B      = 8'b00010000;
-        opcode = 3'b001;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=11111111, sign=1");
-
-        // overflow flag (should be 1)
-        A      = 8'b01111111;
-        B      = 8'b00000001;
-        opcode = 3'b000;
-        #10;
-        $display("%4t | %b | %b | %b | %b | %b | %s", $time, A, B, opcode, result, flags,
-                 "result=10000000, overflow=1");
+        if (errors === 0 && tests == EXPECTED_CHECKS)
+            $display("TESTS PASSED SUCCESSFULLY, %0d CHECKS", tests);
+        else
+            $display(
+                "TESTS FAILED: %0d errors, %0d of %0d checks ran", errors, tests, EXPECTED_CHECKS
+            );
 
         $finish;
     end
-
 
 endmodule

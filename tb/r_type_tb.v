@@ -1,18 +1,33 @@
 `timescale 1ns / 1ps
 
+// ============================================================
+// Testbench for the R-type CPU (control_unit + alu + regfile + rom)
+//
+// Program under test lives in prog.hex:
+//   ADD R3,R1,R2 / SUB R4,R1,R2 / AND R5,R1,R2 /
+//   OR  R6,R1,R2 / XOR R7,R1,R2 / SHR R0,R1
+//
+// The regfile has no load instruction yet, so operands R1/R2 are
+// seeded directly via a hierarchical force AFTER reset deasserts
+// (reset clears the regfile, so seeding earlier would be wiped).
+//
+// Build & run:  ./run.sh r_type
+// ============================================================
 
 module r_type_tb;
 
-    reg           clk;
-    reg           initial_rst;
-    reg     [2:0] dbg_addr;
-    wire    [7:0] dbg_data;
-    integer       i;
+    reg clk;
+    reg initial_rst;
+    reg [2:0] dbg_addr;
+    wire [7:0] dbg_data;
+    integer i;
+
+    localparam EXPECTED_CHECKS = 8;
+    integer errors = 0;
+    integer tests = 0;
 
     // Device under test - control_unit instantiates alu, regfile, rom
-    control_unit #(
-        .PROG_FILE("sim/prog.hex")
-    ) uut (
+    control_unit #(.PROG_FILE("sim/prog.hex")) uut (
         .clk        (clk),
         .initial_rst(initial_rst),
         .dbg_addr   (dbg_addr),
@@ -31,15 +46,15 @@ module r_type_tb;
         $dumpvars(0, uut.u_regfile.registers[i]);
 
         // keep all switches off
-        dbg_addr    = 3'b0;
+        dbg_addr = 3'b0;
 
         initial_rst = 1;
         @(negedge clk);
         @(negedge clk);  // two posedges elapse with reset high
-        initial_rst                = 0;
+        initial_rst = 0;
 
-        uut.u_regfile.registers[1] = 8'h0C;  // R1 = 12
-        uut.u_regfile.registers[2] = 8'h05;  // R2 = 5
+        uut.u_regfile.registers[1] = 8'h0C;    // R1 = 12
+        uut.u_regfile.registers[2] = 8'h05;    // R2 = 5
         $display("t=%0t  reset released; seeded R1=0x0C, R2=0x05", $time);
         $display("time  state  PC  IR    aluA aluB aluRes");
     end
@@ -74,7 +89,12 @@ module r_type_tb;
         check(3'd6, 8'h0D);  // OR  0x0C | 0x05
         check(3'd7, 8'h09);  // XOR 0x0C ^ 0x05
 
-        $display("---- done ----");
+        if (errors === 0 && tests == EXPECTED_CHECKS)
+            $display("TESTS PASSED SUCCESSFULLY, %0d CHECKS", tests);
+        else
+            $display("TESTS FAILED: %0d errors, %0d of %0d checks ran",
+                     errors, tests, EXPECTED_CHECKS);
+
         $finish;
     end
 
@@ -82,15 +102,18 @@ module r_type_tb;
         input [2:0] r;
         input [7:0] expected;
         begin
+            tests = tests + 1;
             if (uut.u_regfile.registers[r] === expected)
                 $display("  PASS  R%0d = 0x%02h", r, expected);
-            else
+            else begin
+                errors = errors + 1;
                 $display(
                     "  FAIL  R%0d = 0x%02h  (expected 0x%02h)",
                     r,
                     uut.u_regfile.registers[r],
                     expected
                 );
+            end
         end
     endtask
 
