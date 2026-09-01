@@ -19,7 +19,7 @@ Two synthesis-only failures that simulated correctly are written up under
 [FPGA bring-up](#fpga-bring-up): a partial `$readmemh` that made XST discard the ROM
 and trim the design to empty logic, and a latch inferred in the control decoder.
 
-**Contents** —
+**Contents**:
 [Architecture](#architecture) ·
 [Status](#status) ·
 [ISA](#isa) ·
@@ -47,7 +47,7 @@ The register file feeds `alu_a` and `alu_b` in DECODE; the ALU evaluates and the
 result returns to the write port in EXECUTE. `ALUSrc` selects the B operand between
 `read2_data` and the sign-extended immediate. The debug read port is a third
 asynchronous read on the register file, driven by `sw[2:0]` and observed on
-`led[7:0]` — the same path the ADDI testbench checks through. `flags[3:0]` is wired
+`led[7:0]`, the same path the ADDI testbench checks through. `flags[3:0]` is wired
 out of the ALU but nothing consumes it yet, so XST trims the flag logic.
 
 ### FSM
@@ -108,7 +108,7 @@ general-purpose register, not hardwired to zero.
 | `1000` | JAL | J | `rd = PC + 1; PC += imm9` | todo |
 
 Opcodes `1001`-`1111` are unassigned. `1111` is used as the program pad, and because
-the DECODE case has no arm for it the FSM holds state — a de-facto halt.
+the DECODE case has no arm for it the FSM holds state, giving a de-facto halt.
 
 Known ISA defect: the immediate widths for LDI and JAL do not reconcile against the
 8-bit datapath, since `imm9` does not fit in a register. This has to be resolved
@@ -270,7 +270,7 @@ The one bench that is finished. Three properties, in order of how much they matt
 ISA definition, not from the RTL expression. A model copied out of the design under
 test fails in the same direction as the design and proves nothing.
 
-**Port-level checking.** `check_reg` drives `dbg_addr` and samples `dbg_data` — the
+**Port-level checking.** `check_reg` drives `dbg_addr` and samples `dbg_data`, the
 same third read port the board reads through. A passing simulation is therefore
 evidence about the path the hardware actually uses, not about an internal array that
 does not exist after synthesis. The DUT owns `posedge`, the bench owns `negedge`, so
@@ -285,7 +285,7 @@ so the bench survives a change in CPI. The 12 checks cover the self-seeding boot
 a negative immediate, a cross-format dependency (ADDI feeding SUB), `rd == rs1`
 back-to-back, the `0x7F + 1` signed wrap, and four bystander registers that must stay
 zero. Validated by mutation: replacing sign-extension with zero-extension in the
-immediate path is caught, and only by the negative-immediate cases — the two agree
+immediate path is caught, and only by the negative-immediate cases, since the two agree
 whenever `imm6[5] == 0`.
 
 `r_type_tb` is the older, weaker bench: it seeds R1 and R2 through a hierarchical
