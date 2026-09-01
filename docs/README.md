@@ -5,6 +5,30 @@ registers. Built alongside ECE 124 at UMass Amherst. Runs on a Xilinx Spartan-3E
 Starter Kit, verified on the board by reading the register file back through a debug
 port to the LEDs.
 
+| | |
+|---|---|
+| Target | Spartan-3E XC3S500E-FG320-4, Xilinx ISE 14.7 |
+| Clock | 71.05 MHz closed, 5.926 ns setup slack against a 20 ns constraint |
+| Area | 213 LUTs, 88 flip-flops, 140 slices (3% of the part), 1 block RAM |
+| Organization | Multi-cycle, Harvard, CPI = 3, two-process FSM |
+| Implemented | R-type (8 ALU ops) and ADDI, of a 9-opcode ISA |
+| Not implemented | Data memory, branches, jumps, explicit HALT |
+| Verification | 4 benches, 46 checks, `./run.sh all` passes |
+
+Two synthesis-only failures that simulated correctly are written up under
+[FPGA bring-up](#fpga-bring-up): a partial `$readmemh` that made XST discard the ROM
+and trim the design to empty logic, and a latch inferred in the control decoder.
+
+**Contents** —
+[Architecture](#architecture) ·
+[Status](#status) ·
+[ISA](#isa) ·
+[Programs](#programs) ·
+[FPGA bring-up](#fpga-bring-up) ·
+[Verification](#verification) ·
+[Layout](#layout) ·
+[Building](#building)
+
 ## Architecture
 
 Multi-cycle, Harvard. Five modules:
@@ -46,39 +70,58 @@ machine stops there. Programs end with a pad of `FFFF` words and rely on this. I
 works, but it is a consequence of an incomplete `case` rather than a design decision;
 an explicit HALT state is on the list below.
 
+## Status
+
+- [x] ALU, register file, control unit (R-type datapath)
+- [x] ADDI
+- [x] Debug read port
+- [x] Synthesizes clean under XST for XC3S500E
+- [x] Pin constraints (`top.ucf`)
+- [x] Bitstream and board programming
+- [x] Running on hardware, verified by register readback on the LEDs
+- [x] Self-checking testbench for ADDI: golden model, port-level, aggregate verdict
+- [x] Regression driver (`run.sh all`) that fails a bench printing no verdict
+- [ ] Port-level checking in `r_type_tb`; drop the hierarchical seed and peek
+- [ ] Aggregate verdict in `alu_tb` and `regfile_tb` so the regression stops reporting
+      `NO VERDICT`
+- [ ] Explicit HALT state instead of relying on an unassigned `state` in REG-READ
+- [ ] Clock enable divider and single-step mode (debounced button drives the enable)
+- [ ] LDI, LD, ST, BEQ, BNE, BLT, JAL
+- [ ] Data memory; `ALUOut` register and ALU input muxes for branches
+- [ ] Assembler
+
 ## ISA
 
 16-bit instruction word, 8-bit datapath, 8 registers R0-R7. R0 is a normal
 general-purpose register, not hardwired to zero.
 
-### Formats
+| Opcode | Mnemonic | Format | Operation | Status |
+|---|---|---|---|---|
+| `0000` | R-type | R | ALU op selected by `func` | done |
+| `0001` | ADDI | I | `rd = rs1 + sext(imm6)` | done |
+| `0010` | LDI | J | `rd = sext(imm9)` | todo |
+| `0011` | LD | I | `rd = MEM[rs1 + imm6]` | todo |
+| `0100` | ST | I | `MEM[rs1 + imm6] = rd` | todo |
+| `0101` | BEQ | I | `if rs1 == rs2: PC += imm6` | todo |
+| `0110` | BNE | I | `if rs1 != rs2: PC += imm6` | todo |
+| `0111` | BLT | I | `if rs1 < rs2: PC += imm6` | todo |
+| `1000` | JAL | J | `rd = PC + 1; PC += imm9` | todo |
+
+Opcodes `1001`-`1111` are unassigned. `1111` is used as the program pad, and because
+the DECODE case has no arm for it the FSM holds state — a de-facto halt.
+
+Known ISA defect: the immediate widths for LDI and JAL do not reconcile against the
+8-bit datapath, since `imm9` does not fit in a register. This has to be resolved
+before either instruction is built.
+
+<details>
+<summary>Instruction encoding and the R-type func field</summary>
 
 ```
 R  [15:12]=0000  [11:9]=rd  [8:6]=rs1  [5:3]=rs2  [2:0]=func
 I  [15:12]=op    [11:9]=rd  [8:6]=rs1  [5:0]=imm6 (signed)
 J  [15:12]=op    [11:9]=rd  [8:0]=imm9 (signed)
 ```
-
-### Opcodes
-
-| Opcode | Mnemonic | Operation | Status |
-|---|---|---|---|
-| `0000` | R-type | ALU op selected by `func` | done |
-| `0001` | ADDI | `rd = rs1 + sext(imm6)` | done |
-| `0010` | LDI | `rd = sext(imm9)` | todo |
-| `0011` | LD | `rd = MEM[rs1 + imm6]` | todo |
-| `0100` | ST | `MEM[rs1 + imm6] = rd` | todo |
-| `0101` | BEQ | `if rs1 == rs2: PC += imm6` | todo |
-| `0110` | BNE | `if rs1 != rs2: PC += imm6` | todo |
-| `0111` | BLT | `if rs1 < rs2: PC += imm6` | todo |
-| `1000` | JAL | `rd = PC + 1; PC += imm9` | todo |
-
-Opcodes `1001`-`1111` are unassigned. `1111` is used as the program pad.
-
-The immediate widths for LDI and JAL still need reconciling against the 8-bit
-datapath: `imm9` does not fit in a register.
-
-### R-type func field
 
 `func[2:0]` is fed straight to the ALU opcode, so the two encodings are the same.
 
@@ -94,7 +137,10 @@ datapath: `imm9` does not fit in a register.
 | `111` | SHR | `rs1 >> 1` (rs2 ignored, logical) |
 
 Flags are `{overflow, sign, carry, zero}`. Carry and overflow are meaningful only for
-ADD and SUB and are forced to 0 for the logical and shift ops.
+ADD and SUB and are forced to 0 for the logical and shift ops. Nothing consumes
+`flags[3:0]` yet, so XST trims the flag logic out of the placed design.
+
+</details>
 
 ## Programs
 
@@ -245,26 +291,6 @@ whenever `imm6[5] == 0`.
 `r_type_tb` is the older, weaker bench: it seeds R1 and R2 through a hierarchical
 force, checks through `uut.u_regfile.registers[]`, and waits a fixed `#250` instead of
 tracking state. Moving it to the `addi_tb` pattern is on the list below.
-
-## Status
-
-- [x] ALU, register file, control unit (R-type datapath)
-- [x] ADDI
-- [x] Debug read port
-- [x] Synthesizes clean under XST for XC3S500E
-- [x] Pin constraints (`top.ucf`)
-- [x] Bitstream and board programming
-- [x] Running on hardware, verified by register readback on the LEDs
-- [x] Self-checking testbench for ADDI: golden model, port-level, aggregate verdict
-- [x] Regression driver (`run.sh all`) that fails a bench printing no verdict
-- [ ] Port-level checking in `r_type_tb`; drop the hierarchical seed and peek
-- [ ] Aggregate verdict in `alu_tb` and `regfile_tb` so the regression stops reporting
-      `NO VERDICT`
-- [ ] Explicit HALT state instead of relying on an unassigned `state` in REG-READ
-- [ ] Clock enable divider and single-step mode (debounced button drives the enable)
-- [ ] LDI, LD, ST, BEQ, BNE, BLT, JAL
-- [ ] Data memory; `ALUOut` register and ALU input muxes for branches
-- [ ] Assembler
 
 ## Layout
 
